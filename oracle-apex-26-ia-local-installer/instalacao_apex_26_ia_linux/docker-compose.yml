@@ -1,0 +1,50 @@
+name: uc-local-apex-dev
+services:
+  26ai:
+    ports:
+      - 1521:1521
+    env_file:
+      - ./.env
+    volumes:
+      - oradata-26ai:/opt/oracle/oradata
+      - .:/opt/oracle/install
+    restart: no
+    healthcheck:
+      #test: ["CMD", "healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+      #start_interval: 5s
+    container_name: local-26ai
+    image: container-registry.oracle.com/database/free:23.26.0.0
+
+  ords-26ai:
+    ports:
+      - 8181:8080
+      - 8443:8443
+    volumes:
+      - type: bind
+        source: ords-config
+        target: /etc/ords/config
+      - type: bind
+        source: apex-images
+        target: /opt/oracle/apex/images
+    restart: no
+    env_file:
+      - ./.env
+    environment:
+      - DEBUG=true
+    depends_on:
+      26ai:
+        condition: service_healthy
+    image: container-registry.oracle.com/database/ords:25.4.0
+    container_name: local-26ai-ords
+
+networks:
+  default:
+    driver: bridge
+
+volumes:
+  oradata-26ai:
+    name: oradata-26ai
